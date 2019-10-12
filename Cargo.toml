@@ -1,0 +1,9 @@
+[package]
+name = "const-default"
+version = "0.1.0"
+edition = "2018"
+
+categories = ["no-std"]
+
+[features]
+std = []
