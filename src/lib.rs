@@ -73,3 +73,7 @@ impl ConstDefault for f32 {
 impl ConstDefault for f64 {
     const DEFAULT: Self = 0.0;
 }
+
+impl ConstDefault for bool {
+    const DEFAULT: Self = false;
+}
