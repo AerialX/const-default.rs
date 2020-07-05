@@ -7,3 +7,5 @@ categories = ["no-std"]
 
 [features]
 std = []
+alloc = []
+unstable = []
