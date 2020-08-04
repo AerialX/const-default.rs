@@ -7,6 +7,9 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+#[cfg(feature = "derive")]
+pub use const_default_derive::ConstDefault;
+
 pub trait ConstDefault: Sized {
     const DEFAULT: Self;
 }

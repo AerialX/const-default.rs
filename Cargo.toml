@@ -10,10 +10,19 @@ repository = "https://github.com/AerialX/const-default.rs"
 readme = "README.md"
 license = "MIT"
 
+[dependencies]
+const-default-derive = { path = "derive", version = "0.1.0", optional = true }
+
 [features]
 std = ["alloc"]
 alloc = []
+derive = ["const-default-derive"]
 unstable = []
 
 [package.metadata.docs.rs]
 all-features = true
+
+[workspace]
+members = [
+	"derive",
+]
