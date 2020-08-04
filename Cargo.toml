@@ -2,9 +2,11 @@
 name = "const-default"
 version = "0.1.0"
 edition = "2018"
+authors = ["AerialX"]
 
 categories = ["no-std"]
 
+description = "A const Default trait"
 documentation = "https://docs.rs/const-default"
 repository = "https://github.com/AerialX/const-default.rs"
 readme = "README.md"

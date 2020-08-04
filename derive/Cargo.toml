@@ -2,7 +2,9 @@
 name = "const-default-derive"
 version = "0.1.0"
 edition = "2018"
+authors = ["AerialX"]
 
+description = "#[derive(ConstDefault)]"
 documentation = "https://docs.rs/const-default-derive"
 repository = "https://github.com/AerialX/const-default.rs"
 readme = "../README.md"
