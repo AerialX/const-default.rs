@@ -5,7 +5,15 @@ edition = "2018"
 
 categories = ["no-std"]
 
+documentation = "https://docs.rs/const-default"
+repository = "https://github.com/AerialX/const-default.rs"
+readme = "README.md"
+license = "MIT"
+
 [features]
 std = ["alloc"]
 alloc = []
 unstable = []
+
+[package.metadata.docs.rs]
+all-features = true

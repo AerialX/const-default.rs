@@ -1,3 +1,4 @@
+#![doc(html_root_url = "http://docs.rs/const-default/0.1.0")]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(feature = "unstable", feature(const_generics))]
 #![cfg_attr(all(feature = "unstable", feature = "alloc"), feature(const_btree_new))]
