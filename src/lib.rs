@@ -1,47 +1,73 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(feature = "unstable", feature(const_generics))]
+#![cfg_attr(all(feature = "unstable", feature = "alloc"), feature(const_btree_new))]
 #![cfg_attr(feature = "unstable", allow(incomplete_features))]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-use core::mem::MaybeUninit;
-use core::cell::{Cell, UnsafeCell, RefCell};
-
-pub trait ConstDefault {
+pub trait ConstDefault: Sized {
     const DEFAULT: Self;
 }
 
-pub trait ConstValue<T = Self> {
-    const VALUE: T;
-}
+pub trait ConstValue<T> {
+    type Output: Sized;
 
-impl<T: ConstDefault> ConstValue<T> for T {
-    const VALUE: T = T::DEFAULT;
+    const VALUE: Self::Output;
 }
 
 impl<T> ConstDefault for Option<T> {
     const DEFAULT: Self = None;
 }
 
-impl<T: ConstDefault> ConstDefault for Cell<T> {
-    const DEFAULT: Self = Cell::new(T::DEFAULT);
+#[cfg(feature = "alloc")]
+impl<'a, T: ConstDefault + Clone + 'a> ConstDefault for alloc::borrow::Cow<'a, T> {
+    const DEFAULT: Self = alloc::borrow::Cow::Owned(T::DEFAULT);
 }
 
-impl<T: ConstDefault> ConstDefault for UnsafeCell<T> {
-    const DEFAULT: Self = UnsafeCell::new(T::DEFAULT);
+impl<T: ConstDefault> ConstDefault for core::cell::Cell<T> {
+    const DEFAULT: Self = Self::new(T::DEFAULT);
 }
 
-impl<T: ConstDefault> ConstDefault for RefCell<T> {
-    const DEFAULT: Self = RefCell::new(T::DEFAULT);
+impl<T: ConstDefault> ConstDefault for core::cell::UnsafeCell<T> {
+    const DEFAULT: Self = Self::new(T::DEFAULT);
+}
+
+impl<T: ConstDefault> ConstDefault for core::cell::RefCell<T> {
+    const DEFAULT: Self = Self::new(T::DEFAULT);
 }
 
 // TODO revisit whether this makes sense?
-impl<T: ConstDefault> ConstDefault for MaybeUninit<T> {
-    const DEFAULT: Self = MaybeUninit::new(T::DEFAULT);
+impl<T: ConstDefault> ConstDefault for core::mem::MaybeUninit<T> {
+    const DEFAULT: Self = Self::new(T::DEFAULT);
 }
 
 #[cfg(feature = "alloc")]
+impl<T> ConstDefault for alloc::vec::Vec<T> {
+    const DEFAULT: Self = Self::new();
+}
+
+#[cfg(feature = "alloc")]
+impl ConstDefault for alloc::string::String {
+    const DEFAULT: Self = Self::new();
+}
+
+#[cfg(all(feature = "alloc", feature = "unstable"))]
+impl<K: Ord, V> ConstDefault for alloc::collections::BTreeMap<K, V> {
+    const DEFAULT: Self = Self::new();
+}
+
+#[cfg(all(feature = "alloc", feature = "unstable"))]
+impl<T: Ord> ConstDefault for alloc::collections::BTreeSet<T> {
+    const DEFAULT: Self = Self::new();
+}
+
+#[cfg(feature = "alloc")]
+impl<T> ConstDefault for alloc::collections::LinkedList<T> {
+    const DEFAULT: Self = Self::new();
+}
+
+/*#[cfg(feature = "alloc")]
 impl<T: ConstDefault> ConstDefault for alloc::sync::Arc<T> {
     const DEFAULT: Self = Self::new(T::DEFAULT);
 }
@@ -51,14 +77,26 @@ impl<T: ConstDefault> ConstDefault for alloc::rc::Rc<T> {
     const DEFAULT: Self = Self::new(T::DEFAULT);
 }
 
-#[cfg(feature = "std")]
-impl<T> ConstDefault for Vec<T> {
-    const DEFAULT: Self = Vec::new();
+#[cfg(feature = "alloc")]
+impl<T: ConstDefault> ConstDefault for alloc::boxed::Box<T> {
+    const DEFAULT: Self = Self::new(T::DEFAULT);
+}*/
+
+impl<'a, T: 'a> ConstDefault for &'a [T] {
+    const DEFAULT: Self = &[];
 }
 
-#[cfg(feature = "std")]
-impl ConstDefault for String {
-    const DEFAULT: Self = String::new();
+/* Doesn't work :(
+impl<'a, T: ConstDefault + 'a> ConstDefault for &'a T {
+    const DEFAULT: Self = &T::DEFAULT;
+}*/
+
+impl<T> ConstDefault for *const T {
+    const DEFAULT: Self = core::ptr::null();
+}
+
+impl<T> ConstDefault for *mut T {
+    const DEFAULT: Self = core::ptr::null_mut();
 }
 
 impl<T: ConstDefault> ConstDefault for core::mem::ManuallyDrop<T> {
@@ -69,15 +107,32 @@ impl<T: ?Sized> ConstDefault for core::marker::PhantomData<T> {
     const DEFAULT: Self = Self;
 }
 
+impl<T> ConstDefault for core::iter::Empty<T> {
+    const DEFAULT: Self = core::iter::empty();
+}
+
 impl<T: ConstDefault> ConstDefault for core::num::Wrapping<T> {
     const DEFAULT: Self = Self(T::DEFAULT);
 }
 
+impl ConstDefault for core::time::Duration {
+    const DEFAULT: Self = core::time::Duration::from_secs(0);
+}
+
+#[cfg(feature = "std")]
+impl ConstDefault for std::sync::Once {
+    const DEFAULT: Self = Self::new();
+}
+
 macro_rules! impl_num {
-    ($($ty:ty$(;$name:ident)?),*) => {
+    ($($ty:ty=$d:expr$(;$name:ident)?),*) => {
         $(
             impl ConstDefault for $ty {
-                const DEFAULT: Self = 0;
+                const DEFAULT: Self = $d;
+            }
+
+            impl ConstDefault for &$ty {
+                const DEFAULT: Self = &<$ty as ConstDefault>::DEFAULT;
             }
 
             $(
@@ -91,25 +146,10 @@ macro_rules! impl_num {
 }
 
 impl_num! {
-    u8;AtomicU8, u16;AtomicU16, u32;AtomicU32, u64;AtomicU64, usize;AtomicUsize,
-    i8;AtomicI8, i16;AtomicI16, i32;AtomicI32, i64;AtomicI64, isize;AtomicIsize,
-    i128, u128
-}
-
-impl ConstDefault for f32 {
-    const DEFAULT: Self = 0.0;
-}
-
-impl ConstDefault for f64 {
-    const DEFAULT: Self = 0.0;
-}
-
-impl ConstDefault for bool {
-    const DEFAULT: Self = false;
-}
-
-impl ConstDefault for char {
-    const DEFAULT: Self = '\x00';
+    ()=(), bool=false, f32=0.0, f64=0.0, char='\x00', &str="",
+    u8=0;AtomicU8, u16=0;AtomicU16, u32=0;AtomicU32, u64=0;AtomicU64, usize=0;AtomicUsize,
+    i8=0;AtomicI8, i16=0;AtomicI16, i32=0;AtomicI32, i64=0;AtomicI64, isize=0;AtomicIsize,
+    i128=0, u128=0
 }
 
 #[cfg(feature = "std")]
@@ -117,8 +157,24 @@ impl ConstDefault for std::sync::atomic::AtomicBool {
     const DEFAULT: Self = Self::new(ConstDefault::DEFAULT);
 }
 
-impl ConstDefault for () {
-    const DEFAULT: Self = ();
+macro_rules! impl_tuple {
+    (@rec $t:ident) => { };
+    (@rec $_:ident $($t:ident)+) => {
+        impl_tuple! { @impl $($t)* }
+        impl_tuple! { @rec $($t)* }
+    };
+    (@impl $($t:ident)*) => {
+        impl<$($t: ConstDefault,)*> ConstDefault for ($($t,)*) {
+            const DEFAULT: Self = ($($t::DEFAULT,)*);
+        }
+    };
+    ($($t:ident)*) => {
+        impl_tuple! { @rec _t $($t)* }
+    };
+}
+
+impl_tuple! {
+    A B C D E F G H I J K L
 }
 
 #[cfg(not(feature = "unstable"))]

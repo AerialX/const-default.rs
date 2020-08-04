@@ -6,6 +6,6 @@ edition = "2018"
 categories = ["no-std"]
 
 [features]
-std = []
+std = ["alloc"]
 alloc = []
 unstable = []
