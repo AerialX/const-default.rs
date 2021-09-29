@@ -1,79 +1,147 @@
 #![doc(html_root_url = "http://docs.rs/const-default-derive/0.1.0")]
+
 extern crate proc_macro;
 
-use core::iter;
-use proc_macro2::{TokenStream, Span};
-use syn::{Fields, Ident, Error};
-use syn::punctuated::Pair;
-use quote::quote;
+use proc_macro::TokenStream;
+use proc_macro2::{Ident, Literal, Span, TokenStream as TokenStream2};
+use proc_macro_crate::{crate_name, FoundCrate};
+use quote::{quote, quote_spanned};
+use syn::{spanned::Spanned, Error};
 
-fn derive_default(input: syn::DeriveInput) -> TokenStream {
-    let ident = input.ident;
-    let mut generics = input.generics;
-
-    let (default, struct_) = match input.data {
-        syn::Data::Struct(s) => (match &s.fields {
-            Fields::Unit => quote! { Self },
-            Fields::Unnamed(fields) => {
-                let fields = fields.unnamed.pairs()
-                    .map(|_| quote!(ConstDefault::DEFAULT));
-                quote! {
-                    Self(#(#fields)*)
-                }
-            },
-            Fields::Named(fields) => {
-                let fields = fields.named.pairs()
-                    .map(|field| match field {
-                        Pair::End(f) => {
-                            let ident = &f.ident;
-                            Pair::End(quote!(#ident: ConstDefault::DEFAULT))
-                        },
-                        Pair::Punctuated(f, p) => {
-                            let ident = &f.ident;
-                            Pair::Punctuated(quote!(#ident: ConstDefault::DEFAULT), p)
-                        },
-                    });
-                quote! {
-                    Self { #(#fields)* }
-                }
-            },
-        }, s),
-        _ => return Error::new(Span::call_site(), "derive can only impl ConstDefault for a struct").to_compile_error().into(),
-    };
-
-    {
-        let where_clause = generics.make_where_clause();
-        // TODO: filter fields to those that reference generic params only?
-        for field in struct_.fields.into_iter() {
-            where_clause.predicates.push(syn::WherePredicate::Type(syn::PredicateType {
-                lifetimes: None,
-                colon_token: Default::default(),
-                bounds: iter::once(syn::TypeParamBound::Trait(syn::TraitBound {
-                    paren_token: None,
-                    modifier: syn::TraitBoundModifier::None,
-                    lifetimes: None,
-                    path: syn::Path {
-                        leading_colon: Some(Default::default()),
-                        segments: vec![
-                            Ident::new("const_default", Span::call_site()),
-                            Ident::new("ConstDefault", Span::call_site()),
-                        ].into_iter().map(syn::PathSegment::from).collect(),
-                    },
-                })).collect(),
-                bounded_ty: field.ty,
-            }));
-        }
+/// Derives an implementation for the [`ConstDefault`] trait.
+///
+/// # Note
+///
+/// Currently only works with `struct` inputs.
+///
+/// # Example
+///
+/// ## Struct
+///
+/// ```
+/// # use const_default::ConstDefault;
+/// #[derive(ConstDefault)]
+/// # #[derive(Debug, PartialEq)]
+/// pub struct Color {
+///     r: u8,
+///     g: u8,
+///     b: u8,
+/// }
+///
+/// assert_eq!(
+///     <Color as ConstDefault>::DEFAULT,
+///     Color { r: 0, g: 0, b: 0 },
+/// )
+/// ```
+///
+/// ## Tuple Struct
+///
+/// ```
+/// # use const_default::ConstDefault;
+/// #[derive(ConstDefault)]
+/// # #[derive(Debug, PartialEq)]
+/// pub struct Vec3(f32, f32, f32);
+///
+/// assert_eq!(
+///     <Vec3 as ConstDefault>::DEFAULT,
+///     Vec3(0.0, 0.0, 0.0),
+/// )
+/// ```
+#[proc_macro_derive(ConstDefault, attributes(const_default))]
+pub fn derive(input: TokenStream) -> TokenStream {
+    match derive_default(input.into()) {
+        Ok(output) => output.into(),
+        Err(error) => error.to_compile_error().into(),
     }
+}
 
+fn derive_default(input: TokenStream2) -> Result<TokenStream2, syn::Error> {
+    let crate_ident = query_crate_ident()?;
+    let input = syn::parse2::<syn::DeriveInput>(input)?;
+    let ident = input.ident;
+    let data_struct = match input.data {
+        syn::Data::Struct(data_struct) => data_struct,
+        _ => {
+            return Err(Error::new(
+                Span::call_site(),
+                "ConstDefault derive only works on struct types",
+            ))
+        }
+    };
+    let default_impl =
+        generate_default_impl_struct(&crate_ident, &data_struct)?;
+    let mut generics = input.generics;
+    generate_default_impl_where_bounds(
+        &crate_ident,
+        &data_struct,
+        &mut generics,
+    )?;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-    quote! {
-        impl #impl_generics ::const_default::ConstDefault for #ident #ty_generics #where_clause {
-            const DEFAULT: Self = #default;
+    Ok(quote! {
+        impl #impl_generics #crate_ident::ConstDefault for #ident #ty_generics #where_clause {
+            const DEFAULT: Self = #default_impl;
+        }
+    })
+}
+
+/// Queries the dependencies for the derive root crate name and returns the identifier.
+fn query_crate_ident() -> Result<TokenStream2, syn::Error> {
+    let query = crate_name("const-default").map_err(|error| {
+        Error::new(
+            Span::call_site(),
+            format!(
+                "could not find root crate for ConstDefault derive: {}",
+                error
+            ),
+        )
+    })?;
+    match query {
+        FoundCrate::Itself => Ok(quote! { crate }),
+        FoundCrate::Name(name) => {
+            let ident = Ident::new(&name, Span::call_site());
+            Ok(quote! { ::#ident })
         }
     }
 }
 
-#[proc_macro_derive(ConstDefault/*, attributes(const_default)*/)]
-pub fn derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    derive_default(syn::parse(input).unwrap()).into()
+/// Generates the `ConstDefault` implementation for `struct` input types.
+fn generate_default_impl_struct(
+    crate_ident: &TokenStream2,
+    data_struct: &syn::DataStruct,
+) -> Result<TokenStream2, syn::Error> {
+    let fields_impl =
+        data_struct.fields.iter().enumerate().map(|(n, field)| {
+            let field_span = field.span();
+            let field_type = &field.ty;
+            let field_pos = Literal::usize_unsuffixed(n);
+            let field_ident = field
+                .ident
+                .as_ref()
+                .map(|ident| quote_spanned!(field_span=> #ident))
+                .unwrap_or_else(|| quote_spanned!(field_span=> #field_pos));
+            quote_spanned!(field_span=>
+                #field_ident: <#field_type as #crate_ident::ConstDefault>::DEFAULT
+            )
+        });
+    Ok(quote! {
+        Self {
+            #( #fields_impl ),*
+        }
+    })
+}
+
+/// Generates `ConstDefault` where bounds for all fields of the input.
+fn generate_default_impl_where_bounds(
+    crate_ident: &TokenStream2,
+    data_struct: &syn::DataStruct,
+    generics: &mut syn::Generics,
+) -> Result<(), syn::Error> {
+    let where_clause = generics.make_where_clause();
+    for field in &data_struct.fields {
+        let field_type = &field.ty;
+        where_clause.predicates.push(syn::parse_quote!(
+            #field_type: #crate_ident::ConstDefault
+        ))
+    }
+    Ok(())
 }
