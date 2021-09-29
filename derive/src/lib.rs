@@ -55,6 +55,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
     }
 }
 
+/// Implements the derive of `#[derive(ConstDefault)]` for struct types.
 fn derive_default(input: TokenStream2) -> Result<TokenStream2, syn::Error> {
     let crate_ident = query_crate_ident()?;
     let input = syn::parse2::<syn::DeriveInput>(input)?;
@@ -85,6 +86,10 @@ fn derive_default(input: TokenStream2) -> Result<TokenStream2, syn::Error> {
 }
 
 /// Queries the dependencies for the derive root crate name and returns the identifier.
+///
+/// # Note
+///
+/// This allows to use crate aliases in `Cargo.toml` files of dependencies.
 fn query_crate_ident() -> Result<TokenStream2, syn::Error> {
     let query = crate_name("const-default").map_err(|error| {
         Error::new(
@@ -105,6 +110,14 @@ fn query_crate_ident() -> Result<TokenStream2, syn::Error> {
 }
 
 /// Generates the `ConstDefault` implementation for `struct` input types.
+///
+/// # Note
+///
+/// The generated code abuses the fact that in Rust struct types can always
+/// be represented with braces and either using identifiers for fields or
+/// raw number literals in case of tuple-structs.
+///
+/// For example `struct Foo(u32)` can be represented as `Foo { 0: 42 }`.
 fn generate_default_impl_struct(
     crate_ident: &TokenStream2,
     data_struct: &syn::DataStruct,
