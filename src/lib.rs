@@ -130,6 +130,10 @@ impl<T> ConstDefault for *mut T {
     const DEFAULT: Self = core::ptr::null_mut();
 }
 
+impl<T> ConstDefault for core::sync::atomic::AtomicPtr<T> {
+    const DEFAULT: Self = Self::new(core::ptr::null_mut());
+}
+
 impl<T: ConstDefault> ConstDefault for core::mem::ManuallyDrop<T> {
     const DEFAULT: Self = Self::new(T::DEFAULT);
 }
