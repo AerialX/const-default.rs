@@ -175,8 +175,7 @@ macro_rules! impl_num {
             }
 
             $(
-                #[cfg(feature = "std")]
-                impl ConstDefault for std::sync::atomic::$name {
+                impl ConstDefault for core::sync::atomic::$name {
                     const DEFAULT: Self = Self::new(ConstDefault::DEFAULT);
                 }
             )?
@@ -191,8 +190,7 @@ impl_num! {
     i128=0, u128=0
 }
 
-#[cfg(feature = "std")]
-impl ConstDefault for std::sync::atomic::AtomicBool {
+impl ConstDefault for core::sync::atomic::AtomicBool {
     const DEFAULT: Self = Self::new(ConstDefault::DEFAULT);
 }
 
