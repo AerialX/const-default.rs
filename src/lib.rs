@@ -142,6 +142,10 @@ impl<T: ?Sized> ConstDefault for core::marker::PhantomData<T> {
     const DEFAULT: Self = Self;
 }
 
+impl ConstDefault for core::marker::PhantomPinned {
+    const DEFAULT: Self = Self;
+}
+
 impl<T> ConstDefault for core::iter::Empty<T> {
     const DEFAULT: Self = core::iter::empty();
 }
