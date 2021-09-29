@@ -9,7 +9,30 @@ extern crate alloc;
 #[cfg(feature = "derive")]
 pub use const_default_derive::ConstDefault;
 
+/// Implements a compilation time default value for the implemented type.
+///
+/// # Note
+///
+/// Unlike the [`Default`] trait implementation the `DEFAULT` of implementations
+/// of this trait can be used in constant evaluation contexts.
+///
+/// # Example
+///
+/// ```
+/// # #[cfg(feature = "std")]
+/// # const _: () = {
+/// # use const_default::ConstDefault;
+/// const VEC: Vec<u8> = <Vec<u8> as ConstDefault>::DEFAULT;
+/// # };
+/// ```
+///
+/// The above code works while the below code does not:
+///
+/// ```compile_fail
+/// const VEC: Vec<u8> = <Vec<u8> as Default>::default();
+/// ```
 pub trait ConstDefault: Sized {
+    /// The constant default value.
     const DEFAULT: Self;
 }
 
