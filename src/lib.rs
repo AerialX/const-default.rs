@@ -9,7 +9,30 @@ extern crate alloc;
 #[cfg(feature = "derive")]
 pub use const_default_derive::ConstDefault;
 
+/// Implements a compilation time default value for the implemented type.
+///
+/// # Note
+///
+/// Unlike the [`Default`] trait implementation the `DEFAULT` of implementations
+/// of this trait can be used in constant evaluation contexts.
+///
+/// # Example
+///
+/// ```
+/// # #[cfg(feature = "std")]
+/// # const _: () = {
+/// # use const_default::ConstDefault;
+/// const VEC: Vec<u8> = <Vec<u8> as ConstDefault>::DEFAULT;
+/// # };
+/// ```
+///
+/// The above code works while the below code does not:
+///
+/// ```compile_fail
+/// const VEC: Vec<u8> = <Vec<u8> as Default>::default();
+/// ```
 pub trait ConstDefault: Sized {
+    /// The constant default value.
     const DEFAULT: Self;
 }
 
@@ -24,8 +47,13 @@ impl<T> ConstDefault for Option<T> {
 }
 
 #[cfg(feature = "alloc")]
-impl<'a, T: ConstDefault + Clone + 'a> ConstDefault for alloc::borrow::Cow<'a, T> {
-    const DEFAULT: Self = alloc::borrow::Cow::Owned(T::DEFAULT);
+impl<'a, T> ConstDefault for Cow<'a, T>
+where
+    T: ToOwned + ?Sized + 'a,
+    <T as ToOwned>::Owned: ConstDefault,
+{
+    const DEFAULT: Self =
+        Self::Owned(<<T as ToOwned>::Owned as ConstDefault>::DEFAULT);
 }
 
 impl<T: ConstDefault> ConstDefault for core::cell::Cell<T> {
@@ -110,6 +138,10 @@ impl<T: ?Sized> ConstDefault for core::marker::PhantomData<T> {
     const DEFAULT: Self = Self;
 }
 
+impl ConstDefault for core::marker::PhantomPinned {
+    const DEFAULT: Self = Self;
+}
+
 impl<T> ConstDefault for core::iter::Empty<T> {
     const DEFAULT: Self = core::iter::empty();
 }
@@ -139,8 +171,7 @@ macro_rules! impl_num {
             }
 
             $(
-                #[cfg(feature = "std")]
-                impl ConstDefault for std::sync::atomic::$name {
+                impl ConstDefault for core::sync::atomic::$name {
                     const DEFAULT: Self = Self::new(ConstDefault::DEFAULT);
                 }
             )?
@@ -155,9 +186,12 @@ impl_num! {
     i128=0, u128=0
 }
 
-#[cfg(feature = "std")]
-impl ConstDefault for std::sync::atomic::AtomicBool {
+impl ConstDefault for core::sync::atomic::AtomicBool {
     const DEFAULT: Self = Self::new(ConstDefault::DEFAULT);
+}
+
+impl<T> ConstDefault for core::sync::atomic::AtomicPtr<T> {
+    const DEFAULT: Self = Self::new(core::ptr::null_mut());
 }
 
 macro_rules! impl_tuple {
