@@ -1,6 +1,7 @@
 #![doc(html_root_url = "http://docs.rs/const-default/0.2.0")]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(all(feature = "unstable", feature = "alloc"), feature(const_btree_new))]
+#![cfg_attr(feature = "unstable", feature(cfg_target_has_atomic))]
 #![cfg_attr(feature = "unstable", allow(incomplete_features))]
 
 #[cfg(feature = "alloc")]
@@ -160,7 +161,7 @@ impl ConstDefault for std::sync::Once {
 }
 
 macro_rules! impl_num {
-    ($($ty:ty=$d:expr$(;$name:ident)?),*) => {
+    ($($ty:ty=$d:expr$(;$name:ident=$width:literal)?),*) => {
         $(
             impl ConstDefault for $ty {
                 const DEFAULT: Self = $d;
@@ -171,6 +172,8 @@ macro_rules! impl_num {
             }
 
             $(
+                #[cfg(feature = "enable-atomics")]
+                #[cfg_attr(feature = "unstable", cfg(target_has_atomic = $width))]
                 impl ConstDefault for core::sync::atomic::$name {
                     const DEFAULT: Self = Self::new(ConstDefault::DEFAULT);
                 }
@@ -181,15 +184,19 @@ macro_rules! impl_num {
 
 impl_num! {
     ()=(), bool=false, f32=0.0, f64=0.0, char='\x00', &str="",
-    u8=0;AtomicU8, u16=0;AtomicU16, u32=0;AtomicU32, u64=0;AtomicU64, usize=0;AtomicUsize,
-    i8=0;AtomicI8, i16=0;AtomicI16, i32=0;AtomicI32, i64=0;AtomicI64, isize=0;AtomicIsize,
+    u8=0;AtomicU8="8", u16=0;AtomicU16="16", u32=0;AtomicU32="32", u64=0;AtomicU64="64", usize=0;AtomicUsize="ptr",
+    i8=0;AtomicI8="8", i16=0;AtomicI16="16", i32=0;AtomicI32="32", i64=0;AtomicI64="64", isize=0;AtomicIsize="ptr",
     i128=0, u128=0
 }
 
+#[cfg(feature = "enable-atomics")]
+#[cfg_attr(feature = "unstable", cfg(target_has_atomic = "8"))]
 impl ConstDefault for core::sync::atomic::AtomicBool {
     const DEFAULT: Self = Self::new(ConstDefault::DEFAULT);
 }
 
+#[cfg(feature = "enable-atomics")]
+#[cfg_attr(feature = "unstable", cfg(target_has_atomic = "ptr"))]
 impl<T> ConstDefault for core::sync::atomic::AtomicPtr<T> {
     const DEFAULT: Self = Self::new(core::ptr::null_mut());
 }
