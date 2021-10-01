@@ -1,4 +1,4 @@
-#![doc(html_root_url = "http://docs.rs/const-default-derive/0.1.0")]
+#![doc(html_root_url = "http://docs.rs/const-default-derive/0.2.0")]
 
 extern crate proc_macro;
 
