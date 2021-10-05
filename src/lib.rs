@@ -39,7 +39,7 @@ pub trait ConstDefault: Sized {
 
 /// Returns the compilation time default value for a type
 #[inline]
-const fn const_default<T: ConstDefault>() -> T
+pub const fn const_default<T: ConstDefault>() -> T
 {
     T::DEFAULT
 }
