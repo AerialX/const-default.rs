@@ -1,22 +1,23 @@
 use const_default::ConstDefault;
+#[cfg(feature = "enable-atomics")]
+use core::sync::atomic::{
+    AtomicBool,
+    AtomicI16,
+    AtomicI32,
+    AtomicI64,
+    AtomicI8,
+    AtomicIsize,
+    AtomicPtr,
+    AtomicU16,
+    AtomicU32,
+    AtomicU64,
+    AtomicU8,
+    AtomicUsize,
+    Ordering,
+};
 use core::{
     cell::{Cell, RefCell},
     fmt::Debug,
-    sync::atomic::{
-        AtomicBool,
-        AtomicI16,
-        AtomicI32,
-        AtomicI64,
-        AtomicI8,
-        AtomicIsize,
-        AtomicPtr,
-        AtomicU16,
-        AtomicU32,
-        AtomicU64,
-        AtomicU8,
-        AtomicUsize,
-        Ordering,
-    },
 };
 
 /// Checks if both `ConstDefault` and `Default` implementations yield the same outcome.
