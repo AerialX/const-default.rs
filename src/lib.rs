@@ -51,11 +51,11 @@ impl<T> ConstDefault for Option<T> {
 #[cfg(feature = "alloc")]
 impl<'a, T> ConstDefault for alloc::borrow::Cow<'a, T>
 where
-    T: ToOwned + ?Sized + 'a,
-    <T as ToOwned>::Owned: ConstDefault,
+    T: alloc::borrow::ToOwned + ?Sized + 'a,
+    <T as alloc::borrow::ToOwned>::Owned: ConstDefault,
 {
     const DEFAULT: Self =
-        Self::Owned(<<T as ToOwned>::Owned as ConstDefault>::DEFAULT);
+        Self::Owned(<<T as alloc::borrow::ToOwned>::Owned as ConstDefault>::DEFAULT);
 }
 
 impl<T: ConstDefault> ConstDefault for core::cell::Cell<T> {
