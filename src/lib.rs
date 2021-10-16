@@ -48,7 +48,7 @@ impl<T> ConstDefault for Option<T> {
 }
 
 #[cfg(feature = "alloc")]
-impl<'a, T> ConstDefault for Cow<'a, T>
+impl<'a, T> ConstDefault for alloc::borrow::Cow<'a, T>
 where
     T: ToOwned + ?Sized + 'a,
     <T as ToOwned>::Owned: ConstDefault,
