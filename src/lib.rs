@@ -4,8 +4,11 @@
     all(feature = "unstable", feature = "alloc"),
     feature(const_btree_new)
 )]
-#![cfg_attr(feature = "unstable", feature(cfg_target_has_atomic))]
-#![cfg_attr(feature = "unstable", allow(incomplete_features))]
+#![cfg_attr(feature = "unstable", feature(const_fn_trait_bound))]
+#![cfg_attr(
+    all(feature = "unstable", feature = "enable-atomics"),
+    feature(cfg_target_has_atomic)
+)]
 #![cfg_attr(
     feature = "enable-atomics",
     allow(clippy::declare_interior_mutable_const)
@@ -46,6 +49,7 @@ pub trait ConstDefault: Sized {
 
 /// Returns the compilation time default value for a type
 #[inline]
+#[cfg(feature = "unstable")]
 pub const fn const_default<T: ConstDefault>() -> T {
     T::DEFAULT
 }
