@@ -37,7 +37,14 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --features test-allocations -- --test-threads 1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features alloc
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features std
 
   fmt:
     name: Formatting
