@@ -100,29 +100,9 @@ impl<T> ConstDefault for alloc::collections::LinkedList<T> {
     const DEFAULT: Self = Self::new();
 }
 
-/*#[cfg(feature = "alloc")]
-impl<T: ConstDefault> ConstDefault for alloc::sync::Arc<T> {
-    const DEFAULT: Self = Self::new(T::DEFAULT);
-}
-
-#[cfg(feature = "alloc")]
-impl<T: ConstDefault> ConstDefault for alloc::rc::Rc<T> {
-    const DEFAULT: Self = Self::new(T::DEFAULT);
-}
-
-#[cfg(feature = "alloc")]
-impl<T: ConstDefault> ConstDefault for alloc::boxed::Box<T> {
-    const DEFAULT: Self = Self::new(T::DEFAULT);
-}*/
-
 impl<'a, T: 'a> ConstDefault for &'a [T] {
     const DEFAULT: Self = &[];
 }
-
-/* Doesn't work :(
-impl<'a, T: ConstDefault + 'a> ConstDefault for &'a T {
-    const DEFAULT: Self = &T::DEFAULT;
-}*/
 
 impl<T> ConstDefault for *const T {
     const DEFAULT: Self = core::ptr::null();
