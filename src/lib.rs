@@ -3,6 +3,7 @@
 #![cfg_attr(all(feature = "unstable", feature = "alloc"), feature(const_btree_new))]
 #![cfg_attr(feature = "unstable", feature(cfg_target_has_atomic))]
 #![cfg_attr(feature = "unstable", allow(incomplete_features))]
+#![cfg_attr(feature = "enable-atomics", allow(clippy::declare_interior_mutable_const))]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
