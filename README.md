@@ -1,5 +1,7 @@
 # ConstDefault Trait
 
+[![Crates.io](https://img.shields.io/crates/v/const-default)](https://crates.io/crates/const-default) [![Crates.io](https://img.shields.io/crates/l/const-default)](LICENSE) [![docs.rs](https://img.shields.io/docsrs/const-default)](https://docs.rs/const-default) [![actions](https://github.com/AerialX/const-default.rs/actions/workflows/rust.yml/badge.svg)](https://github.com/AerialX/const-default.rs/actions/workflows/rust.yml)
+
 A `Default`-like trait and derive macros for `const` evaluation contexts.
 
 This crate defines the `ConstDefault` trait and implements it for
@@ -19,9 +21,11 @@ Add
 [dependencies]
 const-default = { version = "1.0", features = ["derive"] }
 ```
-to your `Cargo.toml` and start using it.
+to your `Cargo.toml` to start using it.
 
-## Example: Rust Primitive
+## Examples
+
+### Rust Primitives
 
 ```rust
 use const_default::ConstDefault;
@@ -34,7 +38,7 @@ fn main() {
 }
 ```
 
-## Example: Derive
+### Derive
 
 ```rust
 use const_default::ConstDefault;
