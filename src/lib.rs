@@ -54,12 +54,6 @@ pub const fn const_default<T: ConstDefault>() -> T {
     T::DEFAULT
 }
 
-pub trait ConstValue<T> {
-    type Output: Sized;
-
-    const VALUE: Self::Output;
-}
-
 impl<T> ConstDefault for Option<T> {
     const DEFAULT: Self = None;
 }
