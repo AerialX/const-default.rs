@@ -21,6 +21,7 @@ std = ["alloc"]
 alloc = []
 derive = ["const-default-derive"]
 unstable = []
+unstable-docs = []
 enable-atomics = []
 
 [package.metadata.docs.rs]

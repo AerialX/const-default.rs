@@ -1,5 +1,6 @@
 #![doc(html_root_url = "http://docs.rs/const-default/1.0.0")]
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(feature = "unstable-docs", feature(doc_cfg))]
 #![cfg_attr(
     all(feature = "unstable", feature = "alloc"),
     feature(const_btree_new)
@@ -18,6 +19,7 @@
 extern crate alloc;
 
 #[cfg(feature = "derive")]
+#[cfg_attr(feature = "unstable-docs", doc(cfg(feature = "derive")))]
 pub use const_default_derive::ConstDefault;
 
 /// Implements a compilation time default value for the implemented type.
@@ -50,6 +52,7 @@ pub trait ConstDefault: Sized {
 /// Returns the compilation time default value for a type
 #[inline]
 #[cfg(feature = "unstable")]
+#[cfg_attr(feature = "unstable-docs", doc(cfg(feature = "unstable")))]
 pub const fn const_default<T: ConstDefault>() -> T {
     T::DEFAULT
 }
@@ -59,6 +62,10 @@ impl<T> ConstDefault for Option<T> {
 }
 
 #[cfg(feature = "alloc")]
+#[cfg_attr(
+    feature = "unstable-docs",
+    doc(cfg(any(feature = "std", feature = "alloc")))
+)]
 impl<'a, T> ConstDefault for alloc::borrow::Cow<'a, T>
 where
     T: alloc::borrow::ToOwned + ?Sized + 'a,
@@ -87,26 +94,52 @@ impl<T: ConstDefault> ConstDefault for core::mem::MaybeUninit<T> {
 }
 
 #[cfg(feature = "alloc")]
+#[cfg_attr(
+    feature = "unstable-docs",
+    doc(cfg(any(feature = "std", feature = "alloc")))
+)]
 impl<T> ConstDefault for alloc::vec::Vec<T> {
     const DEFAULT: Self = Self::new();
 }
 
 #[cfg(feature = "alloc")]
+#[cfg_attr(
+    feature = "unstable-docs",
+    doc(cfg(any(feature = "std", feature = "alloc")))
+)]
 impl ConstDefault for alloc::string::String {
     const DEFAULT: Self = Self::new();
 }
 
 #[cfg(all(feature = "alloc", feature = "unstable"))]
+#[cfg_attr(
+    feature = "unstable-docs",
+    doc(
+        cfg(any(feature = "std", feature = "alloc")),
+        cfg(feature = "unstable")
+    )
+)]
 impl<K: Ord, V> ConstDefault for alloc::collections::BTreeMap<K, V> {
     const DEFAULT: Self = Self::new();
 }
 
 #[cfg(all(feature = "alloc", feature = "unstable"))]
+#[cfg_attr(
+    feature = "unstable-docs",
+    doc(
+        cfg(any(feature = "std", feature = "alloc")),
+        cfg(feature = "unstable")
+    )
+)]
 impl<T: Ord> ConstDefault for alloc::collections::BTreeSet<T> {
     const DEFAULT: Self = Self::new();
 }
 
 #[cfg(feature = "alloc")]
+#[cfg_attr(
+    feature = "unstable-docs",
+    doc(cfg(any(feature = "std", feature = "alloc")))
+)]
 impl<T> ConstDefault for alloc::collections::LinkedList<T> {
     const DEFAULT: Self = Self::new();
 }
@@ -148,6 +181,7 @@ impl ConstDefault for core::time::Duration {
 }
 
 #[cfg(feature = "std")]
+#[cfg_attr(feature = "unstable-docs", doc(cfg(feature = "std")))]
 impl ConstDefault for std::sync::Once {
     const DEFAULT: Self = Self::new();
 }
@@ -165,6 +199,7 @@ macro_rules! impl_num {
 
             $(
                 #[cfg(feature = "enable-atomics")]
+                #[cfg_attr(feature = "unstable-docs", doc(cfg(any(feature = "default", feature = "enable-atomics"))))]
                 #[cfg_attr(feature = "unstable", cfg(target_has_atomic = $width))]
                 impl ConstDefault for core::sync::atomic::$name {
                     const DEFAULT: Self = Self::new(ConstDefault::DEFAULT);
@@ -182,12 +217,20 @@ impl_num! {
 }
 
 #[cfg(feature = "enable-atomics")]
+#[cfg_attr(
+    feature = "unstable-docs",
+    doc(cfg(any(feature = "default", feature = "enable-atomics")))
+)]
 #[cfg_attr(feature = "unstable", cfg(target_has_atomic = "8"))]
 impl ConstDefault for core::sync::atomic::AtomicBool {
     const DEFAULT: Self = Self::new(ConstDefault::DEFAULT);
 }
 
 #[cfg(feature = "enable-atomics")]
+#[cfg_attr(
+    feature = "unstable-docs",
+    doc(cfg(any(feature = "default", feature = "enable-atomics")))
+)]
 #[cfg_attr(feature = "unstable", cfg(target_has_atomic = "ptr"))]
 impl<T> ConstDefault for core::sync::atomic::AtomicPtr<T> {
     const DEFAULT: Self = Self::new(core::ptr::null_mut());
