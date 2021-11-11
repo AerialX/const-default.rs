@@ -1,6 +1,6 @@
 [package]
 name = "const-default"
-version = "1.0.0"
+version = "1.0.0-beta1"
 edition = "2018"
 authors = ["AerialX"]
 
